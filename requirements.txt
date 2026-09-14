@@ -1,0 +1,18 @@
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+apscheduler>=3.10.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# Web framework (choose one)
+fastapi>=0.104.0
+uvicorn>=0.24.0
+# flask>=3.0.0
+
+
+# Email - smtplib is built-in, no package needed!
+
+# Testing
+pytest>=7.4.0

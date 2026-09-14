@@ -1,0 +1,298 @@
+{
+  "teams": {
+    "Arizona Cardinals": {
+      "id": "134946",
+      "name": "Arizona Cardinals",
+      "alternate_name": null,
+      "stadium": "State Farm Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Atlanta Falcons": {
+      "id": "134942",
+      "name": "Atlanta Falcons",
+      "alternate_name": null,
+      "stadium": "Mercedes-Benz Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Baltimore Ravens": {
+      "id": "134922",
+      "name": "Baltimore Ravens",
+      "alternate_name": null,
+      "stadium": "M&T Bank Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Buffalo Bills": {
+      "id": "134918",
+      "name": "Buffalo Bills",
+      "alternate_name": null,
+      "stadium": "Highmark Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Carolina Panthers": {
+      "id": "134943",
+      "name": "Carolina Panthers",
+      "alternate_name": null,
+      "stadium": "Bank of America Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Chicago Bears": {
+      "id": "134938",
+      "name": "Chicago Bears",
+      "alternate_name": null,
+      "stadium": "Soldier Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Cincinnati Bengals": {
+      "id": "134923",
+      "name": "Cincinnati Bengals",
+      "alternate_name": null,
+      "stadium": "Paycor Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Cleveland Browns": {
+      "id": "134924",
+      "name": "Cleveland Browns",
+      "alternate_name": null,
+      "stadium": "Huntington Bank Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Dallas Cowboys": {
+      "id": "134934",
+      "name": "Dallas Cowboys",
+      "alternate_name": null,
+      "stadium": "AT&T Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Denver Broncos": {
+      "id": "134930",
+      "name": "Denver Broncos",
+      "alternate_name": null,
+      "stadium": "Empower Field at Mile High",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Detroit Lions": {
+      "id": "134939",
+      "name": "Detroit Lions",
+      "alternate_name": null,
+      "stadium": "Ford Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Green Bay Packers": {
+      "id": "134940",
+      "name": "Green Bay Packers",
+      "alternate_name": null,
+      "stadium": "Lambeau Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Houston Texans": {
+      "id": "134926",
+      "name": "Houston Texans",
+      "alternate_name": null,
+      "stadium": "NRG Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Indianapolis Colts": {
+      "id": "134927",
+      "name": "Indianapolis Colts",
+      "alternate_name": null,
+      "stadium": "Lucas Oil Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Jacksonville Jaguars": {
+      "id": "134928",
+      "name": "Jacksonville Jaguars",
+      "alternate_name": null,
+      "stadium": "EverBank Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Kansas City Chiefs": {
+      "id": "134931",
+      "name": "Kansas City Chiefs",
+      "alternate_name": null,
+      "stadium": "GEHA Field at Arrowhead Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Las Vegas Raiders": {
+      "id": "134932",
+      "name": "Las Vegas Raiders",
+      "alternate_name": null,
+      "stadium": "Allegiant Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Los Angeles Chargers": {
+      "id": "135908",
+      "name": "Los Angeles Chargers",
+      "alternate_name": null,
+      "stadium": "SoFi Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Los Angeles Rams": {
+      "id": "135907",
+      "name": "Los Angeles Rams",
+      "alternate_name": null,
+      "stadium": "SoFi Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Miami Dolphins": {
+      "id": "134919",
+      "name": "Miami Dolphins",
+      "alternate_name": null,
+      "stadium": "Hard Rock Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Minnesota Vikings": {
+      "id": "134941",
+      "name": "Minnesota Vikings",
+      "alternate_name": null,
+      "stadium": "U.S. Bank Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "New England Patriots": {
+      "id": "134920",
+      "name": "New England Patriots",
+      "alternate_name": null,
+      "stadium": "Gillette Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "New Orleans Saints": {
+      "id": "134944",
+      "name": "New Orleans Saints",
+      "alternate_name": null,
+      "stadium": "Caesars Superdome",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "New York Giants": {
+      "id": "134935",
+      "name": "New York Giants",
+      "alternate_name": null,
+      "stadium": "MetLife Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "New York Jets": {
+      "id": "134921",
+      "name": "New York Jets",
+      "alternate_name": null,
+      "stadium": "MetLife Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Philadelphia Eagles": {
+      "id": "134936",
+      "name": "Philadelphia Eagles",
+      "alternate_name": null,
+      "stadium": "Lincoln Financial Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Pittsburgh Steelers": {
+      "id": "134925",
+      "name": "Pittsburgh Steelers",
+      "alternate_name": null,
+      "stadium": "Acrisure Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "San Francisco 49ers": {
+      "id": "134948",
+      "name": "San Francisco 49ers",
+      "alternate_name": null,
+      "stadium": "Levi's Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Seattle Seahawks": {
+      "id": "134949",
+      "name": "Seattle Seahawks",
+      "alternate_name": null,
+      "stadium": "Lumen Field",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Tampa Bay Buccaneers": {
+      "id": "134945",
+      "name": "Tampa Bay Buccaneers",
+      "alternate_name": null,
+      "stadium": "Raymond James Stadium",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Tennessee Titans": {
+      "id": "134929",
+      "name": "Tennessee Titans",
+      "alternate_name": null,
+      "stadium": "Nissan Stadium Nashville",
+      "league": "NFL",
+      "country": "United States"
+    },
+    "Washington Commanders": {
+      "id": "134937",
+      "name": "Washington Commanders",
+      "alternate_name": null,
+      "stadium": "Northwest Stadium",
+      "league": "NFL",
+      "country": "United States"
+    }
+  },
+  "leagues": [
+    "NFL"
+  ],
+  "countries": [
+    "United States"
+  ],
+  "stadiums": [
+    "Lincoln Financial Field",
+    "M&T Bank Stadium",
+    "Paycor Stadium",
+    "EverBank Stadium",
+    "Raymond James Stadium",
+    "Soldier Field",
+    "Bank of America Stadium",
+    "GEHA Field at Arrowhead Stadium",
+    "U.S. Bank Stadium",
+    "NRG Stadium",
+    "AT&T Stadium",
+    "Allegiant Stadium",
+    "Mercedes-Benz Stadium",
+    "Nissan Stadium Nashville",
+    "Hard Rock Stadium",
+    "Highmark Stadium",
+    "Lucas Oil Stadium",
+    "SoFi Stadium",
+    "MetLife Stadium",
+    "Empower Field at Mile High",
+    "Gillette Stadium",
+    "Northwest Stadium",
+    "Huntington Bank Field",
+    "Levi's Stadium",
+    "State Farm Stadium",
+    "Caesars Superdome",
+    "Acrisure Stadium",
+    "Ford Field",
+    "Lumen Field",
+    "Lambeau Field"
+  ]
+}
