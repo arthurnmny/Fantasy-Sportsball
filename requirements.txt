@@ -3,6 +3,10 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 apscheduler>=3.10.0
 
+# IANA timezone data for zoneinfo. Required on Windows, which ships no system
+# tz database -- models.py resolves America/New_York to assign games to months.
+tzdata>=2024.1
+
 # Database
 sqlalchemy>=2.0.0
 
