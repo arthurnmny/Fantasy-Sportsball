@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sort -k2)",
+      "Bash(git rm *)",
+      "Bash(git check-ignore *)",
+      "Bash(unzip -l \"files\\(5\\).zip\")"
+    ]
+  }
+}

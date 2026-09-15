@@ -22,6 +22,18 @@ span two ESPN season labels -- see espn_client.season_params_for_window.
 `seed_season` is the season whose final ranking seeds the roster. Where a
 league's current season has not meaningfully started, this points at the last
 completed one, because a live table with three games played is noise.
+
+`games_per_week` is the scoring weight input: how many games one team typically
+plays in a week. Points are scaled by NORMALIZE_TO / games_per_week (see
+models.py), so a week of any sport is worth the same 10 points. Edit a value
+here, re-run seed_weights.py, and rebuild silver -- nothing else hardcodes a
+weight.
+
+Two provenances are in play, noted per league. "Observed" means the rate was
+measured from games already in the database, over a window that covers a
+representative slice of that league's season. "Arithmetic" means the observed
+window was unrepresentative -- a few weeks of playoff push, or a tournament --
+so the rate comes from full-season games divided by season length in weeks.
 """
 from __future__ import annotations
 
@@ -41,6 +53,11 @@ class LeagueConfig:
     seed_season: int | None
     season_year_mode: str
     note: str
+    # Typical games one team plays per week. Drives this league's scoring
+    # weight (models.multiplier_for).
+    games_per_week: float
+    # Where that number came from -- copied into league_game_weights.note.
+    weight_note: str
 
 
 LEAGUES: tuple[LeagueConfig, ...] = (
@@ -52,6 +69,8 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=2025,
         season_year_mode="starting",
         note="2026 season is 1 game old -- seeded from the last completed season.",
+        games_per_week=1.0,
+        weight_note="Observed 1.00 -- 17 games over an 18-week season.",
     ),
     LeagueConfig(
         key="NBA",
@@ -61,6 +80,12 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=2026,  # the 2025-26 season, which ended in June
         season_year_mode="ending",
         note="Between seasons -- seeded from the completed 2025-26 season.",
+        games_per_week=3.4,
+        weight_note=(
+            "Arithmetic 3.4 -- 82 games over ~24 weeks. Not observed: the window "
+            "only catches the spring playoff push (7 weeks, 3.20/wk), which runs "
+            "hotter than a normal stretch."
+        ),
     ),
     LeagueConfig(
         key="MLB",
@@ -70,6 +95,8 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=2026,
         season_year_mode="starting",
         note="Current season, in progress.",
+        games_per_week=6.0,
+        weight_note="Observed 5.99 -- 25 weeks in-window, a representative slice.",
     ),
     LeagueConfig(
         key="NHL",
@@ -79,6 +106,11 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=2026,  # the 2025-26 season, which ended in April
         season_year_mode="ending",
         note="Between seasons -- seeded from the completed 2025-26 season.",
+        games_per_week=3.4,
+        weight_note=(
+            "Arithmetic 3.4 -- 82 games over ~24 weeks. Not observed: the window "
+            "only catches the spring playoff push (7 weeks, 3.23/wk)."
+        ),
     ),
     LeagueConfig(
         key="NCAAF",
@@ -88,6 +120,8 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=None,
         season_year_mode="starting",
         note="Standings cannot rank across conferences -- seeded from the AP Top 25.",
+        games_per_week=1.0,
+        weight_note="Observed 1.00 -- 12 games over a 13-week season.",
     ),
     LeagueConfig(
         key="NCAAB",
@@ -102,6 +136,12 @@ LEAGUES: tuple[LeagueConfig, ...] = (
             "surfaces mid-majors with inflated records (High Point, Miami OH) rather than "
             "the strongest teams."
         ),
+        games_per_week=1.7,
+        weight_note=(
+            "Arithmetic 1.7 -- 31 games over an 18-week regular season. Not "
+            "observed: the window only catches the NCAA tournament (2.1 weeks, "
+            "2.29/wk), which is not a typical week."
+        ),
     ),
     LeagueConfig(
         key="MLS",
@@ -111,6 +151,8 @@ LEAGUES: tuple[LeagueConfig, ...] = (
         seed_season=2026,
         season_year_mode="starting",
         note="Current season, in progress; ranked by points.",
+        games_per_week=1.25,
+        weight_note="Observed 1.25 -- 18.5 weeks in-window, includes midweek fixtures.",
     ),
 )
 

@@ -35,6 +35,17 @@ from models import League, Member, OwnedTeam
 from silver_models import SilverGameFact, SilverMatchupFact
 
 
+def total_points(values) -> float:
+    """
+    Sum weighted points and round to 2dp.
+
+    Every silver point value has at most two decimals, so the true sum does too.
+    Rounding here strips float accumulation noise, which keeps the gold-vs-silver
+    reconciliation an exact equality check rather than a tolerance check.
+    """
+    return round(sum(values), 2)
+
+
 def build_gold_standings(session: Session) -> int:
     """
     One row per member: head-to-head record from finalized matchups, plus
@@ -58,9 +69,14 @@ def build_gold_standings(session: Session) -> int:
             record[fact.member_a_id]["ties"] += 1
             record[fact.member_b_id]["ties"] += 1
 
-    season_points: dict[int, int] = defaultdict(int)
+    by_member: dict[int, list[float]] = defaultdict(list)
     for fact in game_facts:
-        season_points[fact.member_id] += fact.points
+        by_member[fact.member_id].append(fact.points)
+    # .get with a 0 default rather than direct indexing: a member whose teams
+    # have not played yet has no entry at all.
+    season_points: dict[int, float] = {
+        member_id: total_points(points) for member_id, points in by_member.items()
+    }
 
     # Seed by record first (wins desc, losses asc), then season points.
     ranked = sorted(
@@ -68,7 +84,7 @@ def build_gold_standings(session: Session) -> int:
         key=lambda m: (
             -record[m.id]["wins"],
             record[m.id]["losses"],
-            -season_points[m.id],
+            -season_points.get(m.id, 0.0),
         ),
     )
 
@@ -80,7 +96,7 @@ def build_gold_standings(session: Session) -> int:
                 wins=record[member.id]["wins"],
                 losses=record[member.id]["losses"],
                 ties=record[member.id]["ties"],
-                season_points=season_points[member.id],
+                season_points=season_points.get(member.id, 0.0),
                 current_seed=seed,
             )
         )
@@ -96,9 +112,12 @@ def build_gold_member_period_scores(session: Session) -> int:
     game_facts = session.execute(select(SilverGameFact)).scalars().all()
     matchup_facts = session.execute(select(SilverMatchupFact)).scalars().all()
 
-    points_by_member_period: dict[tuple[int, str], int] = defaultdict(int)
+    by_member_period: dict[tuple[int, str], list[float]] = defaultdict(list)
     for fact in game_facts:
-        points_by_member_period[(fact.member_id, fact.period)] += fact.points
+        by_member_period[(fact.member_id, fact.period)].append(fact.points)
+    points_by_member_period = {
+        key: total_points(points) for key, points in by_member_period.items()
+    }
 
     result_lookup: dict[tuple[int, str], tuple[str, int]] = {}
     for fact in matchup_facts:
@@ -164,7 +183,7 @@ def build_gold_team_leaderboard(session: Session) -> int:
                 wins=sum(1 for g in team_games if g.outcome.value == "win"),
                 losses=sum(1 for g in team_games if g.outcome.value == "loss"),
                 ties=sum(1 for g in team_games if g.outcome.value == "tie"),
-                total_points=sum(g.points for g in team_games),
+                total_points=total_points(g.points for g in team_games),
             )
         )
         rows_built += 1
@@ -188,11 +207,11 @@ def build_gold_league_breakdown(session: Session) -> int:
                 "member_name": fact.member_name,
                 "league_name": fact.league_name,
                 "games_played": 0,
-                "total_points": 0,
+                "points": [],
             },
         )
         bucket["games_played"] += 1
-        bucket["total_points"] += fact.points
+        bucket["points"].append(fact.points)
 
     for (member_id, league_id), agg in grouped.items():
         session.add(
@@ -202,7 +221,7 @@ def build_gold_league_breakdown(session: Session) -> int:
                 league_id=league_id,
                 league_name=agg["league_name"],
                 games_played=agg["games_played"],
-                total_points=agg["total_points"],
+                total_points=total_points(agg["points"]),
             )
         )
 

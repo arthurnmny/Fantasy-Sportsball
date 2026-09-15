@@ -10,7 +10,7 @@ Season shape (see fantasy-tracker-scope.md):
 - 8 members, each owning one team per league across 7 leagues (56 OwnedTeams).
 - 10 monthly rounds: 7 round-robin + 1 bye + 2 playoff rounds (semifinal, final).
 - Season runs March -> December.
-- Scoring per game: loss=-1, tie=0, win=+1.
+- Scoring per game: loss=-1, tie=0, win=+1, scaled by a per-league weight.
 """
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -80,9 +81,38 @@ def outcome_from_scores(team_score: int, opponent_score: int) -> Outcome:
 
 
 def points_for_scores(team_score: int, opponent_score: int) -> tuple[Outcome, int]:
-    """Return (outcome, points) for a final score. Called by the silver build."""
+    """Return (outcome, unweighted points) for a final score."""
     outcome = outcome_from_scores(team_score, opponent_score)
     return outcome, POINTS_BY_OUTCOME[outcome]
+
+
+# Leagues play wildly different numbers of games per week -- an MLB team plays
+# about six times a week, an NFL team once. Left alone, MLB supplies 66% of all
+# games and therefore 47% of all points, and the fantasy league becomes a
+# baseball contest with six side bets.
+#
+# So one game is scaled by NORMALIZE_TO / games_per_week, which makes a typical
+# week of any sport worth the same NORMALIZE_TO points: an NFL win is worth 10,
+# an MLB win about 1.67. See LeagueGameWeight for the per-league values.
+NORMALIZE_TO = 10.0
+
+
+def multiplier_for(games_per_week: float) -> float:
+    """Scale one game so a week of that league is worth NORMALIZE_TO points."""
+    if games_per_week <= 0:
+        raise ValueError(f"games_per_week must be positive, got {games_per_week!r}")
+    return NORMALIZE_TO / games_per_week
+
+
+def weighted_points(raw_points: int, multiplier: float) -> float:
+    """
+    Apply a league's game weight.
+
+    Rounded to 2dp per game so every stored value has at most two decimals and
+    any sum of them is exactly representable -- which keeps the gold-vs-silver
+    reconciliation an equality check rather than a tolerance check.
+    """
+    return round(raw_points * multiplier, 2)
 
 
 class Member(Base):
@@ -114,6 +144,41 @@ class League(Base):
 
     def __repr__(self) -> str:
         return f"<League id={self.id} name={self.name!r}>"
+
+
+class LeagueGameWeight(Base):
+    """
+    Reference table: what one game is worth in each league, one row per league.
+
+    `multiplier` is NORMALIZE_TO / games_per_week, so a typical week of any
+    sport is worth the same 10 points. Seeded from leagues.py by
+    seed_weights.py; nothing computes these on the fly.
+
+    Deliberately fixed inputs rather than a value derived from the games in the
+    database: a weight recomputed on each run would drift as extraction windows
+    changed, silently rewriting matchups that had already been settled.
+    """
+
+    __tablename__ = "league_game_weights"
+
+    league_id: Mapped[int] = mapped_column(
+        ForeignKey("leagues.id", ondelete="CASCADE"), primary_key=True
+    )
+    # Typical games one team plays in a week -- the input to the weight.
+    games_per_week: Mapped[float] = mapped_column(Float, nullable=False)
+    # NORMALIZE_TO / games_per_week, stored rather than derived so the applied
+    # weight is auditable after the fact.
+    multiplier: Mapped[float] = mapped_column(Float, nullable=False)
+    # Where games_per_week came from -- observed rate vs season arithmetic.
+    note: Mapped[str | None] = mapped_column(String(200), nullable=True)
+
+    league: Mapped["League"] = relationship()
+
+    def __repr__(self) -> str:
+        return (
+            f"<LeagueGameWeight league_id={self.league_id} "
+            f"gpw={self.games_per_week} x{self.multiplier}>"
+        )
 
 
 class OwnedTeam(Base):
@@ -235,8 +300,9 @@ class Matchup(Base):
     schedule_id: Mapped[int] = mapped_column(
         ForeignKey("schedule.id", ondelete="CASCADE"), unique=True, nullable=False
     )
-    member_a_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    member_b_points: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Float, not Integer: a weighted game can be worth 1.67 or 2.94 points.
+    member_a_points: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    member_b_points: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     # Null until resolved, always null for a bye round, and null for a period
     # that is still in flight.
     winner_id: Mapped[int | None] = mapped_column(ForeignKey("members.id"), nullable=True)

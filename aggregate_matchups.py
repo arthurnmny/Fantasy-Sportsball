@@ -49,12 +49,19 @@ def period_end(period: str) -> date:
     return date(year, month, calendar.monthrange(year, month)[1])
 
 
-def period_points(session: Session) -> dict[tuple[int, str], int]:
-    """Sum silver points per (member, period) -- the whole scoring input."""
-    totals: dict[tuple[int, str], int] = defaultdict(int)
+def period_points(session: Session) -> dict[tuple[int, str], float]:
+    """
+    Sum weighted silver points per (member, period) -- the whole scoring input.
+
+    Rounded to 2dp: every per-game value has at most two decimals, so the true
+    sum does too. This is not cosmetic. Winners are decided by comparing these
+    sums, so float accumulation noise at the 1e-13 level could turn a genuine
+    tie into a one-point win.
+    """
+    collected: dict[tuple[int, str], list[float]] = defaultdict(list)
     for fact in session.execute(select(SilverGameFact)).scalars().all():
-        totals[(fact.member_id, fact.period)] += fact.points
-    return totals
+        collected[(fact.member_id, fact.period)].append(fact.points)
+    return {key: round(sum(points), 2) for key, points in collected.items()}
 
 
 def aggregate(session: Session, as_of: date) -> int:
@@ -172,9 +179,10 @@ def seed_playoffs(session: Session) -> tuple[str, bool]:
             return f"regular season still in progress ({pending} matchups unresolved)", False
 
         members = session.execute(select(Member)).scalars().all()
-        season_points: dict[int, int] = defaultdict(int)
+        season_points: dict[int, float] = defaultdict(float)
         for (member_id, _period), points in period_points(session).items():
             season_points[member_id] += points
+        season_points = {k: round(v, 2) for k, v in season_points.items()}
         ranked = sorted(
             members,
             key=lambda m: (

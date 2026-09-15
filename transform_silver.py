@@ -19,6 +19,9 @@ So the pipeline runs this script twice -- once for `games`, then again for
 `derived` after aggregate_matchups.py. `--stage all` does both, which is
 correct only when matchups are already up to date.
 
+The `games` stage needs league_game_weights populated (seed_weights.py); it
+fails loudly rather than scoring an unweighted league if a weight is missing.
+
 Usage:
     python transform_silver.py --stage games
     python transform_silver.py --stage derived
@@ -35,14 +38,30 @@ import db as db_module
 from models import (
     GameResult,
     League,
+    LeagueGameWeight,
     Matchup,
     Member,
     OwnedTeam,
     Schedule,
     local_period,
     points_for_scores,
+    weighted_points,
 )
 from silver_models import SilverGameFact, SilverMatchupFact, SilverScheduleResolved
+
+
+def league_weights(session: Session) -> dict[int, tuple[float, float]]:
+    """
+    {league_id: (games_per_week, multiplier)} from the reference table.
+
+    Every league with games must have a weight: silently defaulting to 1.0 would
+    score a whole league unweighted and look like a plausible result rather than
+    an error, which is exactly the kind of bug that survives to production.
+    """
+    return {
+        row.league_id: (row.games_per_week, row.multiplier)
+        for row in session.execute(select(LeagueGameWeight)).scalars().all()
+    }
 
 
 def build_silver_game_facts(session: Session) -> int:
@@ -50,11 +69,13 @@ def build_silver_game_facts(session: Session) -> int:
     Rebuild silver_game_facts from every GameResult, flattened against its
     OwnedTeam, Member and League.
 
-    Outcome and points are computed here from the two scores -- the only place
-    the scoring rule is applied. Bronze deliberately stores neither.
+    Outcome, raw points and weighted points are computed here from the two
+    scores -- the only place the scoring rule is applied. Bronze deliberately
+    stores none of them.
     """
     session.execute(delete(SilverGameFact))
 
+    weights = league_weights(session)
     results = session.execute(
         select(GameResult, OwnedTeam, Member, League)
         .join(OwnedTeam, GameResult.owned_team_id == OwnedTeam.id)
@@ -62,9 +83,18 @@ def build_silver_game_facts(session: Session) -> int:
         .join(League, OwnedTeam.league_id == League.id)
     ).all()
 
+    unweighted = sorted({league.name for _, _, _, league in results if league.id not in weights})
+    if unweighted:
+        raise SystemExit(
+            "No scoring weight for: "
+            + ", ".join(unweighted)
+            + ". Run seed_weights.py before building silver."
+        )
+
     rows_built = 0
     for result, owned_team, member, league in results:
-        outcome, points = points_for_scores(result.team_score, result.opponent_score)
+        outcome, raw_points = points_for_scores(result.team_score, result.opponent_score)
+        multiplier = weights[league.id][1]
         session.add(
             SilverGameFact(
                 source_result_id=result.id,
@@ -81,7 +111,9 @@ def build_silver_game_facts(session: Session) -> int:
                 team_score=result.team_score,
                 opponent_score=result.opponent_score,
                 outcome=outcome,
-                points=points,
+                raw_points=raw_points,
+                weight_applied=multiplier,
+                points=weighted_points(raw_points, multiplier),
             )
         )
         rows_built += 1

@@ -3,7 +3,11 @@ Silver layer: bronze data cleaned, conformed, and joined to a consistent grain.
 Still one row per real-world event (a game, a matchup) -- not yet rolled up into
 dashboard aggregates. That's the gold layer's job.
 
-Two things are true here that were not true in the odds-era design:
+Three things are true here that were not true in the odds-era design:
+
+0. `points` is *weighted*: the raw -1/0/+1 is scaled by the league's
+   game weight (models.LeagueGameWeight) so that a week of MLB is worth the
+   same as a week of NFL. `raw_points` keeps the unweighted value alongside it.
 
 1. `outcome` and `points` are *derived in this layer* from the raw score, not
    copied from bronze. Bronze stores only what ESPN returned.
@@ -16,7 +20,15 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models import Base, Outcome
@@ -64,7 +76,15 @@ class SilverGameFact(Base):
 
     # Derived here from the scores -- see models.outcome_from_scores.
     outcome: Mapped[Outcome] = mapped_column(Enum(Outcome), nullable=False)
-    points: Mapped[int] = mapped_column(Integer, nullable=False)
+    # The unweighted -1/0/+1, kept so a weighted total can always be traced back
+    # to the raw result that produced it.
+    raw_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    # The league's weight at the time this fact was built, copied rather than
+    # joined so a later edit to league_game_weights cannot retroactively change
+    # what an already-settled matchup was scored against.
+    weight_applied: Mapped[float] = mapped_column(Float, nullable=False)
+    # raw_points * weight_applied, rounded to 2dp. What everything downstream sums.
+    points: Mapped[float] = mapped_column(Float, nullable=False)
 
     built_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 
@@ -95,15 +115,15 @@ class SilverMatchupFact(Base):
 
     member_a_id: Mapped[int] = mapped_column(ForeignKey("members.id"), nullable=False)
     member_a_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    member_a_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    member_a_points: Mapped[float] = mapped_column(Float, nullable=False)
 
     member_b_id: Mapped[int] = mapped_column(ForeignKey("members.id"), nullable=False)
     member_b_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    member_b_points: Mapped[int] = mapped_column(Integer, nullable=False)
+    member_b_points: Mapped[float] = mapped_column(Float, nullable=False)
 
     winner_id: Mapped[int | None] = mapped_column(ForeignKey("members.id"), nullable=True)
     winner_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    margin: Mapped[int] = mapped_column(Integer, nullable=False)  # abs(a_points - b_points)
+    margin: Mapped[float] = mapped_column(Float, nullable=False)  # abs(a_points - b_points)
 
     built_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
 

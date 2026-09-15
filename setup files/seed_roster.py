@@ -36,11 +36,19 @@ from espn_client import (
 )
 from leagues import LEAGUES, LeagueConfig
 from models import League, Member, OwnedTeam
+from names import OWNER_NAMES, team_name_override
 
 MEMBERS_COUNT = 8
 TEAMS_PER_LEAGUE = 8
 DEFAULT_RNG_SEED = 42
-MEMBER_NAMES = [f"Owner {i}" for i in range(1, MEMBERS_COUNT + 1)]
+
+# Owner names live in names.py so there is one place to edit them, and so
+# apply_names.py can rename an existing league without re-dealing it.
+if len(OWNER_NAMES) != MEMBERS_COUNT:
+    raise SystemExit(
+        f"names.py lists {len(OWNER_NAMES)} owner names; this league needs "
+        f"{MEMBERS_COUNT}."
+    )
 
 
 def _as_float(value) -> float | None:
@@ -118,11 +126,11 @@ def assign_to_members(
     One shuffle per league, dealt in member order -- so a member's seven teams
     are independent draws, not a single permuted block.
     """
-    assignments: dict[str, list[tuple[str, TeamRef]]] = {name: [] for name in MEMBER_NAMES}
+    assignments: dict[str, list[tuple[str, TeamRef]]] = {name: [] for name in OWNER_NAMES}
     for league_key, refs in league_teams.items():
         shuffled = list(refs)
         rng.shuffle(shuffled)
-        for member_name, ref in zip(MEMBER_NAMES, shuffled):
+        for member_name, ref in zip(OWNER_NAMES, shuffled):
             assignments[member_name].append((league_key, ref))
     return assignments
 
@@ -201,7 +209,7 @@ def main() -> None:
 
     rng = random.Random(args.seed)
     assignments = assign_to_members(league_teams, rng)
-    for member_name in MEMBER_NAMES:
+    for member_name in OWNER_NAMES:
         if len(assignments[member_name]) != len(LEAGUES):
             raise SystemExit(f"{member_name} ended up with {len(assignments[member_name])} teams")
 
@@ -215,7 +223,7 @@ def main() -> None:
             )
             session.add(league_rows[league.key])
 
-        for member_name in MEMBER_NAMES:
+        for member_name in OWNER_NAMES:
             member = Member(name=member_name)
             session.add(member)
             session.flush()  # need member.id before the OwnedTeam rows
@@ -224,14 +232,15 @@ def main() -> None:
                     OwnedTeam(
                         member_id=member.id,
                         league_id=league_rows[league_key].id,
-                        team_name=ref.display_name,
+                        team_name=team_name_override(league_key, ref.espn_team_id)
+                        or ref.display_name,
                         espn_team_id=ref.espn_team_id,
                     )
                 )
         session.commit()
 
     total = sum(len(v) for v in assignments.values())
-    print(f"\nSeeded {len(MEMBER_NAMES)} members, {len(LEAGUES)} leagues, {total} owned teams.")
+    print(f"\nSeeded {len(OWNER_NAMES)} members, {len(LEAGUES)} leagues, {total} owned teams.")
     print(f"(deal reproducible with --seed {args.seed})\n")
 
     with session_factory() as session:

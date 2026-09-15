@@ -2,6 +2,11 @@
 Generate the season schedule: 7 round-robin rounds, 1 bye round, 2 playoff
 rounds -- one calendar month per round, March through December.
 
+Round numbers map one-to-one onto calendar months (round N is month
+START_MONTH + N - 1), so a round's month is fixed by its number. The bye sits
+mid-season in July, which is round 5; regular play therefore skips round 5 and
+fills rounds 1-4 and 6-8, leaving November and December for the playoffs.
+
 With 8 members a full round-robin needs exactly 7 rounds (28 pairings, every
 member plays every other once) and mathematically requires no bye. The bye
 round is kept anyway because the format calls for a rest/buffer month and it
@@ -30,12 +35,38 @@ import db as db_module
 from models import Matchup, Member, Schedule
 
 REGULAR_ROUNDS = 7
-BYE_ROUND = REGULAR_ROUNDS + 1
-SEMIFINAL_ROUND = BYE_ROUND + 1
+START_MONTH = 3
+# The bye is pinning-by-round-number, not by month: round 5 is July, so round 5
+# is where the rest month goes. Everything else follows from that.
+BYE_ROUND = 5
+BYE_MONTH = 7
+REGULAR_SEASON_ROUNDS = REGULAR_ROUNDS + 1  # the seven rounds above, plus the bye
+SEMIFINAL_ROUND = REGULAR_SEASON_ROUNDS + 1
 FINAL_ROUND = SEMIFINAL_ROUND + 1
 TOTAL_ROUNDS = FINAL_ROUND
-START_MONTH = 3
 PLAYOFF_SIZE = 4
+
+if START_MONTH + BYE_ROUND - 1 != BYE_MONTH:
+    raise SystemExit(
+        f"BYE_ROUND {BYE_ROUND} lands in month {START_MONTH + BYE_ROUND - 1}, "
+        f"not the configured BYE_MONTH {BYE_MONTH}. Move one to match the other."
+    )
+
+
+def regular_round_numbers() -> list[int]:
+    """
+    The round numbers used for regular play -- [1, 2, 3, 4, 6, 7, 8].
+
+    Round 5 is the bye, so the seven round-robin rounds skip it. Returned in
+    order, to be zipped against the pairings from round_robin_rounds().
+    """
+    numbers = [n for n in range(1, REGULAR_SEASON_ROUNDS + 1) if n != BYE_ROUND]
+    if len(numbers) != REGULAR_ROUNDS:
+        raise SystemExit(
+            f"Expected {REGULAR_ROUNDS} regular rounds around a bye at round "
+            f"{BYE_ROUND}, got {len(numbers)}."
+        )
+    return numbers
 
 
 def round_robin_rounds(member_ids: list[int]) -> list[list[tuple[int, int]]]:
@@ -95,7 +126,7 @@ def build_schedule(session: Session, season_year: int, rng_seed: int) -> dict[st
     random.Random(rng_seed).shuffle(anchor)
     rounds = round_robin_rounds(anchor)
 
-    for round_number, pairings in enumerate(rounds, start=1):
+    for round_number, pairings in zip(regular_round_numbers(), rounds):
         for member_a, member_b in pairings:
             session.add(
                 Schedule(
